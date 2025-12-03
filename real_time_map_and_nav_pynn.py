@@ -50,7 +50,7 @@ if not hasattr(collections, "Iterable"):
 #   + 2  -> Test 2: 6x6 map with various obstacle in the map
 #   + 3  -> Test 3: 6x6 map with various obstacle in the map blocking
 #                   the manhattan possible paths
-experiment = 1
+experiment = 2
 
 
 if experiment == 0:
