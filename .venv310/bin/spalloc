@@ -1,6 +1,6 @@
 #!/Users/jacobhornsvennevik/Documents/GitHub/Bio-inspired-spike-based-Hippocampus-and-Posterior-Parietal-Cortex-robotic-system-for-pseudo-mapping/.venv310/bin/python3.10
 import sys
-from spalloc_client.scripts.alloc import main
+from spalloc.scripts.alloc import main
 if __name__ == '__main__':
     if sys.argv[0].endswith('.exe'):
         sys.argv[0] = sys.argv[0][:-4]

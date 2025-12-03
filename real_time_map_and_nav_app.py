@@ -1,4 +1,18 @@
 
+import collections
+import collections.abc
+
+# Compatibility shims for older dependencies (neo, PyNN) on modern Python.
+# Some older libraries still expect Mutable* types under collections instead of collections.abc.
+if not hasattr(collections, "MutableSequence"):
+    collections.MutableSequence = collections.abc.MutableSequence
+if not hasattr(collections, "MutableMapping"):
+    collections.MutableMapping = collections.abc.MutableMapping
+if not hasattr(collections, "MutableSet"):
+    collections.MutableSet = collections.abc.MutableSet
+if not hasattr(collections, "Iterable"):
+    collections.Iterable = collections.abc.Iterable
+
 from sPyMem.hippocampus_with_forgetting import hippocampus_with_forgetting
 import spynnaker8 as sim
 import math
@@ -31,7 +45,7 @@ Map state codes:
 #   + 1  -> Test 1: 4x4 map with 1 obstacle in the path
 #   + 2  -> Test 2: 6x6 map with various obstacle in the map
 #   + 3  -> Test 3: 6x6 map with various obstacle in the map blocking the manhattan possible paths
-experiment = 0
+experiment = 1
 
 
 # Robot demo: test 1 with a real robot
