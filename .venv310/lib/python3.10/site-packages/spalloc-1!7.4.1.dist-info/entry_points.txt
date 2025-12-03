@@ -1,0 +1,6 @@
+[console_scripts]
+spalloc = spalloc_client.scripts.alloc:main
+spalloc-job = spalloc_client.scripts.job:main
+spalloc-machine = spalloc_client.scripts.machine:main
+spalloc-ps = spalloc_client.scripts.ps:main
+spalloc-where-is = spalloc_client.scripts.where_is:main

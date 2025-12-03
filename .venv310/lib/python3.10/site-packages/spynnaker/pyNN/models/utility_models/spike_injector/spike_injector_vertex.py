@@ -1,0 +1,170 @@
+# Copyright (c) 2017 The University of Manchester
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import logging
+import sys
+from typing import (Collection, Dict, List, Optional, Tuple, Union)
+import numpy
+from numpy.typing import NDArray
+from pyNN.space import Grid2D, Grid3D, BaseStructure
+from spinn_utilities.log import FormatAdapter
+from spinn_utilities.overrides import overrides
+from pacman.model.graphs.common import Slice
+from pacman.model.partitioner_splitters import AbstractSplitterCommon
+from spinn_front_end_common.utility_models import ReverseIpTagMultiCastSource
+from spynnaker.pyNN.data import SpynnakerDataView
+from spynnaker.pyNN.models.common import EIEIOSpikeRecorder
+from spynnaker.pyNN.utilities.buffer_data_type import BufferDataType
+from spynnaker.pyNN.models.abstract_models import SupportsStructure
+from spynnaker.pyNN.models.common import PopulationApplicationVertex
+
+
+logger = FormatAdapter(logging.getLogger(__name__))
+
+
+class SpikeInjectorVertex(
+        ReverseIpTagMultiCastSource, PopulationApplicationVertex,
+        SupportsStructure):
+    """
+    An Injector of Spikes for PyNN populations.  This only allows the user
+    to specify the virtual_key of the population to identify the population.
+    """
+    __slots__ = (
+        "__spike_recorder",
+        "__structure")
+
+    default_parameters = {
+        'label': "spikeInjector", 'port': None, 'virtual_key': None}
+
+    SPIKE_RECORDING_REGION_ID = 0
+
+    def __init__(
+            self, n_neurons: int, label: str,
+            port: Optional[int], virtual_key: Optional[int],
+            reserve_reverse_ip_tag: bool,
+            splitter: Optional[AbstractSplitterCommon],
+            max_atoms_per_core: Optional[
+                Union[int, Tuple[int, ...]]] = sys.maxsize):
+        """
+        :param label: The optional name of the vertex.
+        """
+        super().__init__(
+            n_keys=n_neurons, label=label, receive_port=port,
+            virtual_key=virtual_key,
+            reserve_reverse_ip_tag=reserve_reverse_ip_tag,
+            splitter=splitter, max_atoms_per_core=max_atoms_per_core)
+
+        # Set up for recording
+        self.__spike_recorder = EIEIOSpikeRecorder()
+        self.__structure: Optional[BaseStructure] = None
+
+    @overrides(SupportsStructure.set_structure)
+    def set_structure(self, structure: BaseStructure) -> None:
+        self.__structure = structure
+
+    @property
+    @overrides(PopulationApplicationVertex.atoms_shape)
+    def atoms_shape(self) -> Tuple[int, ...]:
+        if isinstance(self.__structure, (Grid2D, Grid3D)):
+            return self.__structure.calculate_size(self.n_atoms)
+        return super().atoms_shape
+
+    @overrides(PopulationApplicationVertex.get_recordable_variables)
+    def get_recordable_variables(self) -> List[str]:
+        return ["spikes"]
+
+    @overrides(PopulationApplicationVertex.set_recording)
+    def set_recording(
+            self, name: str, sampling_interval: Optional[float] = None,
+            indices: Optional[Collection[int]] = None) -> None:
+        if name != "spikes":
+            raise KeyError(f"Cannot record {name}")
+        if sampling_interval is not None:
+            logger.warning("Sampling interval currently not supported for "
+                           "SpikeInjector so being ignored")
+        if indices is not None:
+            logger.warning("Indices currently not supported for "
+                           "SpikeInjector so being ignored")
+        self.enable_recording(True)
+        self.__spike_recorder.record = True
+
+    @overrides(PopulationApplicationVertex.get_recording_variables)
+    def get_recording_variables(self) -> List[str]:
+        if self.__spike_recorder.record:
+            return ["spikes"]
+        return []
+
+    @overrides(PopulationApplicationVertex.set_not_recording)
+    def set_not_recording(self, name: str,
+                          indices: Optional[Collection[int]] = None) -> None:
+        if name != "spikes":
+            raise KeyError(f"Cannot record {name}")
+        if indices is not None:
+            logger.warning("Indices currently not supported for "
+                           "SpikeSourceArray so being ignored")
+        self.enable_recording(False)
+        self.__spike_recorder.record = False
+
+    @overrides(PopulationApplicationVertex.get_sampling_interval_ms)
+    def get_sampling_interval_ms(self, name: str) -> float:
+        if name != "spikes":
+            raise KeyError(f"Cannot record {name}")
+        return SpynnakerDataView.get_simulation_time_step_us()
+
+    @overrides(PopulationApplicationVertex.get_data_type)
+    def get_data_type(self, name: str) -> None:
+        if name != "spikes":
+            raise KeyError(f"Cannot record {name}")
+        return None
+
+    @overrides(PopulationApplicationVertex.get_buffer_data_type)
+    def get_buffer_data_type(self, name: str) -> BufferDataType:
+        if name == "spikes":
+            return BufferDataType.EIEIO_SPIKES
+        raise KeyError(f"Cannot record {name}")
+
+    @overrides(PopulationApplicationVertex.get_units)
+    def get_units(self, name: str) -> str:
+        if name == "spikes":
+            return ""
+        raise KeyError(f"Cannot record {name}")
+
+    @overrides(PopulationApplicationVertex.get_recording_region)
+    def get_recording_region(self, name: str) -> int:
+        if name != "spikes":
+            raise KeyError(f"Cannot record {name}")
+        return 0
+
+    @overrides(PopulationApplicationVertex.get_neurons_recording)
+    def get_neurons_recording(
+            self, name: str, vertex_slice: Slice) -> NDArray[numpy.integer]:
+        if name != "spikes":
+            raise KeyError(f"Cannot record {name}")
+        return vertex_slice.get_raster_ids()
+
+    def describe(self) -> Dict[str, Union[str, Collection[str]]]:
+        """
+        :returns: A human-readable description of the cell or synapse type.
+        """
+        context = {
+            "name": "SpikeInjector",
+            "default_parameters":
+                self.default_parameters,
+            "default_initial_values":
+                self.default_parameters,
+            "parameters": {
+                "port": self._eieio_params.receive_port,
+                "virtual_key": self._eieio_params.virtual_key},
+        }
+        return context

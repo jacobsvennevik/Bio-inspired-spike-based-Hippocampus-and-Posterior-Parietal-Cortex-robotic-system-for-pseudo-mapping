@@ -1,0 +1,181 @@
+# Copyright (c) 2014 The University of Manchester
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+from __future__ import annotations
+from typing import List, Sequence, Tuple, TYPE_CHECKING, cast
+from spinn_utilities.overrides import overrides
+from spinn_utilities.config_holder import get_config_bool
+from pacman.model.graphs.application import (
+    ApplicationEdgePartition, ApplicationVertex)
+from spinn_front_end_common.utilities.constants import BYTES_PER_WORD
+
+from spynnaker.pyNN.models.abstract_models import ColouredApplicationVertex
+from spynnaker.pyNN.exceptions import DelayExtensionException
+from spynnaker.pyNN.models.abstract_models import AbstractHasDelayStages
+from spynnaker.pyNN.utilities.constants import POP_TABLE_MAX_ROW_LENGTH
+from spynnaker.pyNN.models.neural_projections import DelayedApplicationEdge
+if TYPE_CHECKING:
+    from spynnaker.pyNN.extra_algorithms.splitter_components import (
+        SplitterDelayVertexSlice)
+
+_DELAY_PARAM_HEADER_WORDS = 9
+
+
+class DelayExtensionVertex(ColouredApplicationVertex, AbstractHasDelayStages):
+    """
+    Provide delays to incoming spikes in multiples of the maximum delays
+    of a neuron (typically 16 or 32).
+    """
+    __slots__ = (
+        # The partition this Delay is supporting
+        "__partition",
+        "__delay_per_stage",
+        "__n_delay_stages",
+        "__drop_late_spikes",
+        "__outgoing_edges",
+        "__n_colour_bits")
+
+    # this maps to what master assumes
+    MAX_SLOTS = 8
+    SAFETY_FACTOR = 5000
+    MAX_DTCM_AVAILABLE = 59756 - SAFETY_FACTOR
+
+    def __init__(
+            self, partition: ApplicationEdgePartition, delay_per_stage: int,
+            n_delay_stages: int, n_colour_bits: int,
+            label: str = "DelayExtension"):
+        """
+        :param partition: The partition that this delay is supporting
+        :param delay_per_stage: the delay per stage
+        :param n_delay_stages: the (initial) number of delay stages needed
+        :param n_colour_bits: the number of bits for event colouring
+        :param label: the vertex label
+        """
+        super().__init__(
+            label, POP_TABLE_MAX_ROW_LENGTH, splitter=None)
+
+        self.__partition = partition
+        self.__n_delay_stages = n_delay_stages
+        self.__delay_per_stage = delay_per_stage
+
+        self.__drop_late_spikes = get_config_bool(
+            "Simulation", "drop_late_spikes") or False
+
+        self.__outgoing_edges: List[DelayedApplicationEdge] = list()
+
+        self.__n_colour_bits = n_colour_bits
+
+    @property
+    def n_atoms(self) -> int:
+        """
+        The number of atoms in this vertex.
+        """
+        return self.__partition.pre_vertex.n_atoms
+
+    @property
+    @overrides(ColouredApplicationVertex.atoms_shape)
+    def atoms_shape(self) -> Tuple[int, ...]:
+        return self.__partition.pre_vertex.atoms_shape
+
+    @property
+    def _delay_splitter(self) -> SplitterDelayVertexSlice:
+        if TYPE_CHECKING:
+            return cast(SplitterDelayVertexSlice, self._splitter)
+        else:
+            return self._splitter
+
+    @property
+    def drop_late_spikes(self) -> bool:
+        """
+        Whether to drop late spikes.
+        """
+        return self.__drop_late_spikes
+
+    @staticmethod
+    def get_max_delay_ticks_supported(delay_ticks_at_post_vertex: int) -> int:
+        """
+        :param delay_ticks_at_post_vertex:
+        :returns:
+           The max ticks the combination of delay and post vertex can handle.
+        """
+        return DelayExtensionVertex.MAX_SLOTS * delay_ticks_at_post_vertex
+
+    @property
+    @overrides(AbstractHasDelayStages.n_delay_stages)
+    def n_delay_stages(self) -> int:
+        return self.__n_delay_stages
+
+    def set_new_n_delay_stages_and_delay_per_stage(
+            self, n_delay_stages: int, delay_per_stage: int) -> None:
+        """
+        Sets the delays per stages. Verifies delay per stage is unchanged.
+
+        :param n_delay_stages:
+        :param delay_per_stage:
+        """
+        if delay_per_stage != self.__delay_per_stage:
+            raise DelayExtensionException(
+                "The delay per stage is already set to "
+                f"{self.__delay_per_stage}, and therefore {delay_per_stage} "
+                "is not yet feasible. "
+                "Please report it to Spinnaker user mail list.")
+
+        if n_delay_stages > self.__n_delay_stages:
+            self.__n_delay_stages = n_delay_stages
+
+    @property
+    def delay_per_stage(self) -> int:
+        """
+        The delay per stage, in timesteps.
+        """
+        return self.__delay_per_stage
+
+    @property
+    def source_vertex(self) -> ApplicationVertex:
+        """
+        The pre vertex of the delayed partition.
+        """
+        return self.__partition.pre_vertex
+
+    def delay_params_size(self) -> int:
+        """
+        :returns: The size of the delay parameters.
+        """
+        return BYTES_PER_WORD * _DELAY_PARAM_HEADER_WORDS
+
+    @property
+    def partition(self) -> ApplicationEdgePartition:
+        """
+        The partition that this delay is supporting.
+        """
+        return self.__partition
+
+    def add_outgoing_edge(self, edge: DelayedApplicationEdge) -> None:
+        """
+        Add an outgoing edge to the delay extension.
+
+        :param edge: The edge to add
+        """
+        self.__outgoing_edges.append(edge)
+
+    @property
+    def outgoing_edges(self) -> Sequence[DelayedApplicationEdge]:
+        """
+        The outgoing edges from this vertex.
+        """
+        return self.__outgoing_edges
+
+    @property
+    @overrides(ColouredApplicationVertex.n_colour_bits)
+    def n_colour_bits(self) -> int:
+        return self.__n_colour_bits

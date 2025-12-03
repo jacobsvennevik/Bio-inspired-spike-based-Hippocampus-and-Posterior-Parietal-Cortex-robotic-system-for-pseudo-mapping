@@ -1,0 +1,2 @@
+[console_scripts]
+spinnaker_router_provenance_mapper = spinn_front_end_common.interface.provenance.router_prov_mapper:main [plotting]
