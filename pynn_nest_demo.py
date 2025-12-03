@@ -8,8 +8,8 @@ def main():
 
     # 2. Populations: Poisson input -> LIF neurons
     input_pop = sim.Population(
-        10,
-        sim.SpikeSourcePoisson(rate=20.0),
+        50,  # more input neurons
+        sim.SpikeSourcePoisson(rate=100.0),  # higher firing rate
         label="poisson_input",
     )
 
@@ -32,7 +32,7 @@ def main():
 
     # 3. Projections: connect input to excitatory neurons
     connector = sim.FixedProbabilityConnector(p_connect=0.5)
-    synapse = sim.StaticSynapse(weight=0.01, delay=1.0)  # nA, ms
+    synapse = sim.StaticSynapse(weight=0.1, delay=1.0)  # stronger synapses, nA, ms
     sim.Projection(input_pop, exc_pop, connector, synapse_type=synapse)
 
     # 4. Recording

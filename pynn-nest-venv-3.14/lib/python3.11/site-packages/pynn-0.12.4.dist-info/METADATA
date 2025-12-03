@@ -1,0 +1,122 @@
+Metadata-Version: 2.4
+Name: PyNN
+Version: 0.12.4
+Summary: A Python package for simulator-independent specification of neuronal network models
+Author-email: The PyNN team <pynn-maintainers@protonmail.com>
+Maintainer-email: The PyNN team <pynn-maintainers@protonmail.com>
+License-Expression: CECILL-2.1
+Project-URL: homepage, http://neuralensemble.org/PyNN/
+Project-URL: documentation, http://neuralensemble.org/docs/PyNN/
+Project-URL: repository, https://github.com/NeuralEnsemble/PyNN
+Project-URL: changelog, http://neuralensemble.org/docs/PyNN/release_notes.html
+Project-URL: download, http://pypi.python.org/pypi/PyNN
+Keywords: computational neuroscience, simulation, neuron, nest, brian2, neuromorphic
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Science/Research
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Topic :: Education
+Classifier: Topic :: Scientific/Engineering
+Requires-Python: >=3.9
+Description-Content-Type: text/x-rst
+License-File: LICENSE
+License-File: AUTHORS
+Requires-Dist: lazyarray>=0.5.2
+Requires-Dist: neo>=0.13.4
+Requires-Dist: morphio
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: pytest-cov; extra == "test"
+Requires-Dist: flake8; extra == "test"
+Requires-Dist: wheel; extra == "test"
+Requires-Dist: mpi4py; extra == "test"
+Requires-Dist: scipy; extra == "test"
+Requires-Dist: matplotlib; extra == "test"
+Requires-Dist: Cheetah3; extra == "test"
+Requires-Dist: h5py; extra == "test"
+Requires-Dist: Jinja2; extra == "test"
+Provides-Extra: doc
+Requires-Dist: sphinx; extra == "doc"
+Provides-Extra: examples
+Requires-Dist: matplotlib; extra == "examples"
+Requires-Dist: scipy; extra == "examples"
+Provides-Extra: plotting
+Requires-Dist: matplotlib; extra == "plotting"
+Requires-Dist: scipy; extra == "plotting"
+Provides-Extra: mpi
+Requires-Dist: mpi4py; extra == "mpi"
+Provides-Extra: sonata
+Requires-Dist: h5py; extra == "sonata"
+Provides-Extra: neuron
+Requires-Dist: neuron; extra == "neuron"
+Requires-Dist: nrnutils; extra == "neuron"
+Provides-Extra: brian2
+Requires-Dist: brian2; extra == "brian2"
+Provides-Extra: arbor
+Requires-Dist: arbor==0.9.0; extra == "arbor"
+Requires-Dist: libNeuroML; extra == "arbor"
+Provides-Extra: spinnaker
+Requires-Dist: spyNNaker; extra == "spinnaker"
+Provides-Extra: neuroml
+Requires-Dist: libNeuroML; extra == "neuroml"
+Dynamic: license-file
+
+PyNN
+====
+
+PyNN (pronounced '*pine*') is a simulator-independent language for building
+neuronal network models.
+
+In other words, you can write the code for a model once, using the PyNN API and
+the Python programming language, and then run it without modification on any
+simulator that PyNN supports (currently NEURON, NEST and Brian 2) and
+on a number of neuromorphic hardware systems.
+
+The PyNN API aims to support modelling at a high-level of abstraction
+(populations of neurons, layers, columns and the connections between them) while
+still allowing access to the details of individual neurons and synapses when
+required. PyNN provides a library of standard neuron, synapse and synaptic
+plasticity models, which have been verified to work the same on the different
+supported simulators. PyNN also provides a set of commonly-used connectivity
+algorithms (e.g. all-to-all, random, distance-dependent, small-world) but makes
+it easy to provide your own connectivity in a simulator-independent way.
+
+Even if you don't wish to run simulations on multiple simulators, you may
+benefit from writing your simulation code using PyNN's powerful, high-level
+interface. In this case, you can use any neuron or synapse model supported by
+your simulator, and are not restricted to the standard models.
+
+
+- Home page: http://neuralensemble.org/PyNN/
+- Documentation: http://neuralensemble.org/docs/PyNN/
+- Mailing list: https://groups.google.com/forum/?fromgroups#!forum/neuralensemble
+- Bug reports: https://github.com/NeuralEnsemble/PyNN/issues
+
+
+:copyright: Copyright 2006-2024 by the PyNN team, see AUTHORS.
+:license: CeCILL, see LICENSE for details.
+
+.. image:: https://github.com/NeuralEnsemble/PyNN/actions/workflows/full-test.yml/badge.svg
+   :target: https://github.com/NeuralEnsemble/PyNN/actions/workflows/full-test.yml
+   :alt: Unit Test Status
+
+.. image:: https://coveralls.io/repos/NeuralEnsemble/PyNN/badge.svg?branch=master&service=github
+   :target: https://coveralls.io/github/NeuralEnsemble/PyNN?branch=master
+   :alt: Test coverage
+
+Funding
+-------
+
+Development of PyNN has been partially funded by the European Union Sixth Framework Program (FP6) under
+grant agreement FETPI-015879 (FACETS), by the European Union Seventh Framework Program (FP7/2007­-2013)
+under grant agreements no. 269921 (BrainScaleS) and no. 604102 (HBP),
+and by the European Union’s Horizon 2020 Framework Programme for
+Research and Innovation under the Specific Grant Agreements No. 720270 (Human Brain Project SGA1)
+, No. 785907 (Human Brain Project SGA2) and No. 945539 (Human Brain Project SGA3).
